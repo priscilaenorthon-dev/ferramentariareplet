@@ -13,14 +13,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
 import type { Tool } from "@shared/schema";
 import { utils, writeFile } from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function Calibration() {
+  const { isOperator } = useAuth();
   const { data: tools, isLoading } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
+    enabled: isOperator,
   });
 
   const calibrationTools = tools?.filter(t => 
@@ -140,6 +143,21 @@ export default function Calibration() {
     
     doc.save(`calibracao_${format(now, 'dd-MM-yyyy')}.pdf`);
   };
+
+  if (!isOperator) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Restrito</CardTitle>
+            <CardDescription>
+              Você não tem permissão para acessar esta página.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
