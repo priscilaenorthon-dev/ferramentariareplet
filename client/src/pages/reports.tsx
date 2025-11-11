@@ -15,10 +15,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
 
 export default function Reports() {
   const { toast } = useToast();
+  const { isOperator } = useAuth();
   const [reportType, setReportType] = useState<string>("loaned");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -27,6 +29,7 @@ export default function Reports() {
 
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    enabled: isOperator,
   });
 
   const departments = Array.from(
@@ -147,6 +150,21 @@ export default function Reports() {
       });
     }
   };
+
+  if (!isOperator) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Restrito</CardTitle>
+            <CardDescription>
+              Você não tem permissão para acessar esta página.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

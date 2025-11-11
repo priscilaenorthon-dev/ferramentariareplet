@@ -170,6 +170,7 @@ export default function AuditPage() {
     error: toolsError,
   } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
+    enabled: isAdmin,
   });
 
   const {
@@ -178,6 +179,7 @@ export default function AuditPage() {
     error: usersError,
   } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    enabled: isAdmin,
   });
 
   const {
@@ -186,7 +188,7 @@ export default function AuditPage() {
     error: toolLogsError,
   } = useQuery<AuditLogEntry[]>({
     queryKey: ["auditLogs", "tool", selectedToolId],
-    enabled: !!selectedToolId,
+    enabled: isAdmin && !!selectedToolId,
     queryFn: () => fetchAuditLogs({ targetType: "tool", targetId: selectedToolId }),
   });
 
@@ -196,7 +198,7 @@ export default function AuditPage() {
     error: userLogsError,
   } = useQuery<AuditLogEntry[]>({
     queryKey: ["auditLogs", "user", selectedUserId],
-    enabled: !!selectedUserId,
+    enabled: isAdmin && !!selectedUserId,
     queryFn: () => fetchAuditLogs({ userId: selectedUserId }),
   });
 

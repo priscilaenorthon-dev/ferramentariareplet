@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
 
 type VerificationStatus = "ok" | "attention" | "planned";
 
@@ -218,6 +219,23 @@ function renderIdeaStatus(status: ImprovementIdea["status"]) {
 }
 
 export default function ImprovementIdeas() {
+  const { isAdmin } = useAuth();
+
+  if (!isAdmin) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Restrito</CardTitle>
+            <CardDescription>
+              Você não tem permissão para acessar esta página.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6" data-testid="page-improvement-ideas">
       <div className="space-y-2">

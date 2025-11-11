@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -67,7 +68,7 @@ const toolFormSchema = z
 type ToolFormData = z.infer<typeof toolFormSchema>;
 
 export default function Tools() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isOperator } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -76,14 +77,17 @@ export default function Tools() {
 
   const { data: tools, isLoading: loadingTools } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
+    enabled: isOperator,
   });
 
   const { data: classes } = useQuery<ToolClass[]>({
     queryKey: ["/api/classes"],
+    enabled: isOperator,
   });
 
   const { data: models } = useQuery<ToolModel[]>({
     queryKey: ["/api/models"],
+    enabled: isOperator,
   });
 
   const form = useForm<ToolFormData>({
@@ -217,6 +221,21 @@ export default function Tools() {
     const matchesStatus = statusFilter === "all" || tool.status === statusFilter;
     return matchesSearch && matchesStatus;
   }) || [];
+
+  if (!isOperator) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Restrito</CardTitle>
+            <CardDescription>
+              Você não tem permissão para acessar esta página.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

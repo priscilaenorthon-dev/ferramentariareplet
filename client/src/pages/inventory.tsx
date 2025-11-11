@@ -18,15 +18,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import type { Tool } from "@shared/schema";
 
 export default function Inventory() {
+  const { isOperator } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<string>("all");
 
   const { data: tools, isLoading } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
+    enabled: isOperator,
   });
 
   const getStatusBadge = (status: string) => {
@@ -58,6 +62,21 @@ export default function Inventory() {
   const totalQuantity = filteredTools.reduce((sum, tool) => sum + tool.quantity, 0);
   const availableQuantity = filteredTools.reduce((sum, tool) => sum + tool.availableQuantity, 0);
   const loanedQuantity = totalQuantity - availableQuantity;
+
+  if (!isOperator) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Restrito</CardTitle>
+            <CardDescription>
+              Você não tem permissão para acessar esta página.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

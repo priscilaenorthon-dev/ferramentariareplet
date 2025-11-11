@@ -265,14 +265,17 @@ export default function Loans() {
 
   const { data: tools } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
+    enabled: isOperator,
   });
 
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    enabled: isOperator,
   });
 
   const { data: loans, isLoading: isLoadingLoans } = useQuery<LoanWithRelations[]>({
     queryKey: ["/api/loans"],
+    enabled: isOperator,
   });
 
   const createLoanMutation = useMutation({
