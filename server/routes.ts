@@ -214,6 +214,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
     try {
+      console.log(`[/api/dashboard/stats] req.user:`, req.user);
+      console.log(`[/api/dashboard/stats] req.user?.role:`, req.user?.role);
+      console.log(`[/api/dashboard/stats] Filtering by user:`, req.user?.role === 'user');
+      
       const stats = await storage.getDashboardStats(
         req.user?.role === 'user' ? { userId: req.user.id } : undefined
       );
@@ -579,6 +583,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Loans routes
   app.get('/api/loans', isAuthenticated, async (req, res) => {
     try {
+      console.log(`[/api/loans] req.user:`, req.user);
+      console.log(`[/api/loans] req.user?.role:`, req.user?.role);
+      console.log(`[/api/loans] Filtering by user:`, req.user?.role === 'user');
+      
       const loans = await storage.getLoans(
         req.user?.role === 'user'
           ? { userId: req.user.id, status: 'active' }
