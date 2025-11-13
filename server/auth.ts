@@ -82,9 +82,7 @@ export function isOperatorOrAdmin(req: Request, res: Response, next: NextFunctio
 export async function loadUserFromSession(req: Request, res: Response, next: NextFunction) {
   if (req.session && (req.session as any).userId) {
     try {
-      const userId = (req.session as any).userId;
-      const user = await storage.getUser(userId);
-      
+      const user = await storage.getUser((req.session as any).userId);
       if (user) {
         req.user = {
           id: user.id,
@@ -94,15 +92,10 @@ export async function loadUserFromSession(req: Request, res: Response, next: Nex
           lastName: user.lastName,
           email: user.email,
         };
-        console.log(`[loadUserFromSession] User loaded: ${user.username} (${user.role})`);
-      } else {
-        console.log(`[loadUserFromSession] User not found for userId: ${userId}`);
       }
     } catch (error) {
-      console.error("[loadUserFromSession] Error loading user from session:", error);
+      console.error("Error loading user from session:", error);
     }
-  } else {
-    console.log("[loadUserFromSession] No session or userId found");
   }
   next();
 }
