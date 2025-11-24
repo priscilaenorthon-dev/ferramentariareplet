@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Teste rápido da API PHP</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; max-width: 640px; }
+    label { display: block; margin: 0.5rem 0 0.25rem; font-weight: 600; }
+    input { width: 100%; padding: 0.5rem; margin-bottom: 0.75rem; }
+    button { padding: 0.5rem 1rem; cursor: pointer; }
+    pre { background: #f6f8fa; padding: 0.75rem; border: 1px solid #ddd; overflow: auto; }
+    .row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .row > button { flex: 1; }
+    small { color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Teste da API PHP</h1>
+  <p>Use este formulário para fazer login e testar se a API está respondendo. Cookies de sessão são enviados automaticamente.</p>
+
+  <label for="username">Usuário</label>
+  <input id="username" type="text" placeholder="username">
+
+  <label for="password">Senha</label>
+  <input id="password" type="password" placeholder="password">
+
+  <div class="row">
+    <button id="loginBtn">POST /api/auth/login</button>
+    <button id="meBtn">GET /api/auth/user</button>
+    <button id="logoutBtn">POST /api/auth/logout</button>
+  </div>
+
+  <div class="row">
+    <button id="toolsBtn">GET /api/tools</button>
+    <button id="dashboardBtn">GET /api/dashboard/stats</button>
+  </div>
+
+  <small>Base detectada: <span id="base"></span></small>
+  <h3>Resposta</h3>
+  <pre id="output">{}</pre>
+
+  <script>
+    const output = document.getElementById('output');
+    const baseEl = document.getElementById('base');
+
+    // Detecta o prefixo base (ex.: /replit/php-api) a partir da localização atual.
+    const currentPath = window.location.pathname;
+    const basePrefix = currentPath
+      .replace(/\/test-client\.html$/, '')
+      .replace(/\/test-client\.php$/, '');
+    baseEl.textContent = basePrefix || '/php-api';
+
+    async function callApi(method, path, body) {
+      output.textContent = 'Carregando...';
+      try {
+        const res = await fetch(basePrefix + path, {
+          method,
+          headers: body ? { 'Content-Type': 'application/json' } : undefined,
+          body: body ? JSON.stringify(body) : undefined,
+          credentials: 'same-origin'
+        });
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); } catch { json = { raw: text }; }
+        output.textContent = JSON.stringify({ status: res.status, json }, null, 2);
+      } catch (err) {
+        output.textContent = `Erro: ${err}`;
+      }
+    }
+
+    document.getElementById('loginBtn').onclick = () => {
+      callApi('POST', '/api/auth/login', {
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value
+      });
+    };
+
+    document.getElementById('meBtn').onclick = () => callApi('GET', '/api/auth/user');
+    document.getElementById('logoutBtn').onclick = () => callApi('POST', '/api/auth/logout');
+    document.getElementById('toolsBtn').onclick = () => callApi('GET', '/api/tools');
+    document.getElementById('dashboardBtn').onclick = () => callApi('GET', '/api/dashboard/stats');
+  </script>
+</body>
+</html>

@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/c
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { apiUrl } from "@/lib/apiBase";
+import { getBasePath } from "@/lib/routerBase";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username é obrigatório"),
@@ -19,6 +21,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const base = getBasePath();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -31,10 +34,11 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -52,8 +56,9 @@ export default function Login() {
         description: `Bem-vindo, ${user.firstName} ${user.lastName}`,
       });
 
-      // Redirect to dashboard
-      window.location.href = '/';
+      // Redirect para o dashboard recarregando no base path atual
+      const target = (base || "").replace(/\/$/, "") + "/";
+      window.location.href = target || "/";
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "wouter";
 import {
@@ -121,6 +121,12 @@ export default function Dashboard() {
   const topTools = stats?.topTools ?? [];
   const lowAvailabilityTools = stats?.lowAvailabilityTools ?? [];
   const overdueLoans = stats?.overdueLoans ?? [];
+
+  const safeFormat = (value: string | null | undefined, pattern: string) => {
+    if (!value) return "—";
+    const dt = new Date(value);
+    return isValid(dt) ? format(dt, pattern, { locale: ptBR }) : "—";
+  };
 
   const departmentChartData = usageByDepartment.map((item) => ({
     department: item.department,
@@ -293,7 +299,7 @@ export default function Dashboard() {
                     </div>
                     {tool.lastLoanDate ? (
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(tool.lastLoanDate), "dd/MM", { locale: ptBR })}
+                        {safeFormat(tool.lastLoanDate, "dd/MM")}
                       </span>
                     ) : null}
                   </div>
@@ -448,7 +454,7 @@ export default function Dashboard() {
                         </code>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {loan.userName} • {format(new Date(loan.loanDate), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {loan.userName} • {safeFormat(loan.loanDate, "dd/MM/yyyy HH:mm")}
                       </p>
                     </div>
                     {getStatusBadge(loan.status)}
@@ -488,7 +494,7 @@ export default function Dashboard() {
                         </code>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Vencimento: {format(new Date(calibration.dueDate), "dd/MM/yyyy", { locale: ptBR })}
+                        Vencimento: {safeFormat(calibration.dueDate, "dd/MM/yyyy")}
                       </p>
                     </div>
                     <div className={`flex items-center gap-1 ${getUrgencyColor(calibration.daysRemaining)}`}>

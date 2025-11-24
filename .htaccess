@@ -1,0 +1,17 @@
+RewriteEngine On
+
+# Não exibir listagem de diretório e definir página inicial do SPA
+Options -Indexes
+DirectoryIndex public/index.html
+
+# Não interferir nas APIs PHP
+RewriteRule ^php-api/ - [L]
+
+# Se pedir raiz ou pesquisar index, envia public/index.html
+RewriteRule ^$ public/index.html [L]
+RewriteRule ^index\.html$ public/index.html [L]
+
+# SPA: se não existir arquivo/diretório, entrega public/index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ public/index.html [L]

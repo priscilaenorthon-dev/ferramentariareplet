@@ -4,6 +4,8 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  // Gera caminhos relativos para funcionar em subpastas (ex.: /replit/dist/public).
+  base: "./",
   plugins: [
     react(),
     runtimeErrorOverlay(),

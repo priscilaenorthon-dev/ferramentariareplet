@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,71 @@ import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+type RawTool = Tool & {
+  class_id?: string | null;
+  model_id?: string | null;
+  available_quantity?: number | null;
+  last_calibration_date?: string | Date | null;
+  next_calibration_date?: string | Date | null;
+  class_name?: string | null;
+  model_name?: string | null;
+  requires_calibration?: boolean | null;
+  calibration_interval_days?: number | null;
+  class?: { id?: string | null; name?: string | null } | null;
+  model?: {
+    id?: string | null;
+    name?: string | null;
+    requiresCalibration?: boolean | null;
+    calibrationIntervalDays?: number | null;
+  } | null;
+};
+
+type NormalizedTool = Tool & {
+  className?: string | null;
+  modelName?: string | null;
+};
+
+const parseDate = (value: unknown): Date | null => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.includes("T") ? value : value.replace(" ", "T");
+    const dateFromString = new Date(normalized);
+    return Number.isNaN(dateFromString.getTime()) ? null : dateFromString;
+  }
+  return null;
+};
+
+const normalizeTool = (tool: RawTool): NormalizedTool => {
+  const quantity =
+    typeof tool.quantity === "number" ? tool.quantity : Number(tool.quantity) || 0;
+
+  const availableRaw =
+    tool.availableQuantity ??
+    tool.available_quantity ??
+    (typeof tool.available_quantity === "string" ? Number(tool.available_quantity) : undefined);
+
+  const availableQuantity =
+    typeof availableRaw === "number" && !Number.isNaN(availableRaw)
+      ? availableRaw
+      : quantity;
+
+  return {
+    ...tool,
+    classId: tool.classId ?? tool.class_id ?? null,
+    modelId: tool.modelId ?? tool.model_id ?? null,
+    quantity,
+    availableQuantity,
+    status: tool.status ?? "available",
+    lastCalibrationDate: parseDate(tool.lastCalibrationDate ?? tool.last_calibration_date),
+    nextCalibrationDate: parseDate(tool.nextCalibrationDate ?? tool.next_calibration_date),
+    className: tool.class?.name ?? tool.class_name ?? undefined,
+    modelName: tool.model?.name ?? tool.model_name ?? undefined,
+  };
+};
+
 const toolFormSchema = z
   .object({
     name: z.string().min(1, "Nome é obrigatório"),
@@ -73,7 +138,7 @@ export default function Tools() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
-  const [editingTool, setEditingTool] = useState<Tool | null>(null);
+  const [editingTool, setEditingTool] = useState<NormalizedTool | null>(null);
 
   const { data: tools, isLoading: loadingTools } = useQuery<Tool[]>({
     queryKey: ["/api/tools"],
@@ -89,6 +154,16 @@ export default function Tools() {
     queryKey: ["/api/models"],
     enabled: isOperator,
   });
+
+  const normalizedTools = useMemo<NormalizedTool[]>(
+    () => (tools as RawTool[] | undefined)?.map(normalizeTool) ?? [],
+    [tools],
+  );
+
+  const classNameById = (id?: string | null) =>
+    (classes || []).find((c) => c.id === id)?.name;
+  const modelNameById = (id?: string | null) =>
+    (models || []).find((m) => m.id === id)?.name;
 
   const form = useForm<ToolFormData>({
     resolver: zodResolver(toolFormSchema),
@@ -176,7 +251,19 @@ export default function Tools() {
     }
   };
 
-  const handleEdit = (tool: Tool) => {
+  const parsePossibleDate = (value: unknown) => {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    if (typeof value === "string") {
+      // Normalize common MySQL datetime formats to ISO-like string before parsing
+      const normalized = value.includes("T") ? value : value.replace(" ", "T");
+      const d = new Date(normalized);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  };
+
+  const handleEdit = (tool: NormalizedTool) => {
     setEditingTool(tool);
     form.reset({
       name: tool.name,
@@ -186,7 +273,7 @@ export default function Tools() {
       quantity: tool.quantity,
       availableQuantity: tool.availableQuantity,
       status: tool.status,
-      lastCalibrationDate: tool.lastCalibrationDate ? new Date(tool.lastCalibrationDate) : null,
+      lastCalibrationDate: parsePossibleDate(tool.lastCalibrationDate),
     });
     setOpen(true);
   };
@@ -215,12 +302,19 @@ export default function Tools() {
     );
   };
 
-  const filteredTools = tools?.filter((tool) => {
-    const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const getClassName = (tool: NormalizedTool) =>
+    classNameById(tool.classId) || tool.className || "-";
+
+  const getModelName = (tool: NormalizedTool) =>
+    modelNameById(tool.modelId) || tool.modelName || "-";
+
+  const filteredTools = normalizedTools.filter((tool) => {
+    const matchesSearch =
+      tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tool.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || tool.status === statusFilter;
     return matchesSearch && matchesStatus;
-  }) || [];
+  });
 
   if (!isOperator) {
     return (
@@ -244,7 +338,7 @@ export default function Tools() {
           <h1 className="text-3xl font-bold mb-2">Ferramentas</h1>
           <p className="text-muted-foreground">Gerencie o cadastro de todas as ferramentas</p>
         </div>
-        {isAdmin && (
+        {isOperator && (
           <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
               <Button data-testid="button-add-tool">
@@ -544,14 +638,14 @@ export default function Tools() {
                       <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{tool.code}</code>
                     </TableCell>
                     <TableCell className="font-medium">{tool.name}</TableCell>
-                    <TableCell>{(tool as any).class?.name || "-"}</TableCell>
-                    <TableCell>{(tool as any).model?.name || "-"}</TableCell>
+                    <TableCell>{getClassName(tool)}</TableCell>
+                    <TableCell>{getModelName(tool)}</TableCell>
                     <TableCell>{tool.quantity}</TableCell>
                     <TableCell>{tool.availableQuantity}</TableCell>
                     <TableCell>{getStatusBadge(tool.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {isAdmin && (
+                        {isOperator && (
                           <>
                             <Button
                               variant="ghost"

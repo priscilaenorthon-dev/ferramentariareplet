@@ -17,6 +17,7 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { User } from "@shared/schema";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function Reports() {
   const { toast } = useToast();
@@ -65,7 +66,7 @@ export default function Reports() {
 
       switch (reportType) {
         case 'loaned': {
-          const response = await fetch('/api/loans');
+          const response = await fetch(apiUrl('/api/loans'));
           const allLoans = await response.json();
           const activeLoans = allLoans.filter((loan: any) => loan.status === 'active');
           const { generateLoanedToolsReport } = await import('@/lib/pdfGenerator');
@@ -81,7 +82,7 @@ export default function Reports() {
         }
 
         case 'history': {
-          const response = await fetch('/api/loans');
+          const response = await fetch(apiUrl('/api/loans'));
           const allLoans = await response.json();
           const filteredLoans = allLoans.filter((loan: any) => {
             const loanDate = new Date(loan.loanDate);
@@ -101,7 +102,7 @@ export default function Reports() {
         }
 
         case 'calibration': {
-          const response = await fetch('/api/tools');
+          const response = await fetch(apiUrl('/api/tools'));
           const allTools = await response.json();
           const calibrationTools = allTools.filter((tool: any) => 
             tool.model?.requiresCalibration && tool.nextCalibrationDate
@@ -118,7 +119,7 @@ export default function Reports() {
         }
 
         case 'inventory': {
-          const response = await fetch('/api/tools');
+          const response = await fetch(apiUrl('/api/tools'));
           const allTools = await response.json();
           const inventoryData = allTools.map((tool: any) => ({
             toolCode: tool.code,

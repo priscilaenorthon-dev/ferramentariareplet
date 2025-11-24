@@ -1,4 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
+import { apiUrl } from "@/lib/apiBase";
+import { getBasePath } from "@/lib/routerBase";
 import {
   Sidebar,
   SidebarContent,
@@ -11,13 +13,15 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const { user, isAdmin, isOperator } = useAuth();
   const [location] = useLocation();
+
+  const base = getBasePath();
 
   const menuItems = [
     {
@@ -126,10 +130,10 @@ export function AppSidebar() {
                     isActive={location === item.url}
                     data-testid={`sidebar-${item.url.slice(1) || "home"}`}
                   >
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <span className="material-icons text-base">{item.icon}</span>
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -157,12 +161,13 @@ export function AppSidebar() {
           data-testid="button-logout"
           onClick={async () => {
             try {
-              const response = await fetch('/api/auth/logout', {
+              const response = await fetch(apiUrl('/api/auth/logout'), {
                 method: 'POST',
                 credentials: 'include',
               });
               if (response.ok) {
-                window.location.href = "/auth/login";
+                const target = (base || "").replace(/\/$/, "") + "/";
+                window.location.href = target || "/";
               }
             } catch (error) {
               console.error('Logout error:', error);

@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import type { AuditLogWithActor, Tool, User } from "@shared/schema";
 import { useAuth } from "@/hooks/useAuth";
+import { apiUrl } from "@/lib/apiBase";
 
 type AuditLogEntry = Omit<AuditLogWithActor, "createdAt"> & { createdAt: string };
 
@@ -140,7 +141,7 @@ function AuditLogList({
 
 async function fetchAuditLogs(params: Record<string, string>): Promise<AuditLogEntry[]> {
   const query = new URLSearchParams(params).toString();
-  const response = await fetch(`/api/audit/logs?${query}`, {
+  const response = await fetch(apiUrl(`/api/audit/logs?${query}`), {
     credentials: "include",
   });
   if (!response.ok) {
