@@ -4,9 +4,9 @@ import path from "node:path";
 
 const rootDir = process.cwd();
 
-const entrypoint = path.join(rootDir, "api", "[[...route]].ts");
+const entrypoint = path.join(rootDir, "api", "index.ts");
 
-assert.ok(fs.existsSync(entrypoint), "api/[[...route]].ts should exist");
+assert.ok(fs.existsSync(entrypoint), "api/index.ts should exist");
 
 const source = fs.readFileSync(entrypoint, "utf8");
 assert.match(source, /export default/);
@@ -20,6 +20,13 @@ assert.ok(fs.existsSync(configPath), "vercel.json should exist");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 assert.equal(config.outputDirectory, "dist/public");
+assert.ok(
+  config.rewrites?.some(
+    (rewrite) =>
+      rewrite.source === "/api/:match*" && rewrite.destination === "/api",
+  ),
+  "expected API rewrite to route /api/* into api/index.ts",
+);
 assert.ok(
   config.rewrites?.some(
     (rewrite) =>
