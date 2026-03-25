@@ -1,10 +1,12 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import type { UserRole } from "@shared/schema";
 
 const SALT_ROUNDS = 10;
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 // Extend Express Request to include user
 declare global {
@@ -23,26 +25,52 @@ declare global {
 }
 
 export async function setupAuth(app: Express) {
-  // Trust proxy for Replit deployments (required for secure cookies in production)
   if (process.env.NODE_ENV === "production") {
     app.set('trust proxy', 1);
   }
 
-  // Session configuration
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "ferramentaria-secret-key-change-in-production",
-      resave: false,
-      saveUninitialized: false,
-      proxy: true, // Enable proxy support for Replit deployments
-      cookie: {
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true,
-        sameSite: 'lax', // CSRF protection
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      },
-    })
-  );
+  app.use(createSessionMiddleware());
+}
+
+function getSessionSecret(): string {
+  if (process.env.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be set in production");
+  }
+
+  return "ferramentaria-secret-key-change-in-development";
+}
+
+function createSessionMiddleware() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL must be set before configuring sessions");
+  }
+
+  const PgSessionStore = connectPg(session);
+  const sessionStore = new PgSessionStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    tableName: "sessions",
+    ttl: Math.floor(SESSION_TTL_MS / 1000),
+  });
+
+  return session({
+    name: "ferramentaria.sid",
+    secret: getSessionSecret(),
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    proxy: process.env.NODE_ENV === "production",
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: SESSION_TTL_MS,
+    },
+  });
 }
 
 export async function hashPassword(password: string): Promise<string> {

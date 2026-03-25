@@ -10,7 +10,7 @@ export default function Landing() {
             <span className="material-icons text-primary text-3xl">build</span>
             <h1 className="text-2xl font-bold">Sistema JOMAGA</h1>
           </div>
-          <Button data-testid="button-login" onClick={() => window.location.href = "/api/login"}>
+          <Button data-testid="button-login" onClick={() => window.location.href = "/"}>
             Fazer Login
           </Button>
         </div>
@@ -26,7 +26,7 @@ export default function Landing() {
             size="lg" 
             className="min-h-12"
             data-testid="button-login-main"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={() => window.location.href = "/"}
           >
             Acessar Sistema
           </Button>

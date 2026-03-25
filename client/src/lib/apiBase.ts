@@ -1,10 +1,9 @@
 const envBase = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 
-// Fallback: usa o host atual apontando para o backend PHP na pasta /replit/php-api.
 const defaultBase =
   typeof window !== "undefined"
-    ? `${window.location.origin}/replit/php-api`
-    : "http://localhost/replit/php-api";
+    ? window.location.origin
+    : "http://localhost:5000";
 
 const base = envBase.trim() !== "" ? envBase : defaultBase;
 
