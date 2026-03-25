@@ -78,7 +78,7 @@ Aplicacao web full-stack para gestao de ferramentas e emprestimos, construida co
    npm run db:push
    npm run seed
    ```
-6. Execute o deploy. O frontend será publicado de `dist/public` e a API rodará como função serverless em `api/[...route].ts`.
+6. Execute o deploy. O frontend será publicado de `dist/public` e a API rodará como função serverless em `api/[[...route]].ts`.
 7. `VITE_API_BASE` só é necessário se frontend e backend ficarem em domínios diferentes. No Vercel com mesma origem, não precisa definir.
 
 ## Fluxo rapido para teste com MCP Neon

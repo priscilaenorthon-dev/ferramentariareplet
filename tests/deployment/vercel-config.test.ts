@@ -4,13 +4,14 @@ import path from "node:path";
 
 const rootDir = process.cwd();
 
-const entrypoint = path.join(rootDir, "api", "index.ts");
+const entrypoint = path.join(rootDir, "api", "[[...route]].ts");
 
-assert.ok(fs.existsSync(entrypoint), "api/index.ts should exist");
+assert.ok(fs.existsSync(entrypoint), "api/[[...route]].ts should exist");
 
 const source = fs.readFileSync(entrypoint, "utf8");
 assert.match(source, /export default/);
 assert.match(source, /createApp/);
+assert.match(source, /runtime\s*=\s*["']nodejs["']/);
 
 const configPath = path.join(rootDir, "vercel.json");
 
@@ -25,14 +26,7 @@ assert.equal(config.outputDirectory, "dist/public");
 assert.ok(
   config.rewrites?.some(
     (rewrite) =>
-      rewrite.source === "/api/(.*)" && rewrite.destination === "/api/index",
+      rewrite.source === "/((?!api(?:/|$)).*)" && rewrite.destination === "/index.html",
   ),
-  "expected /api rewrite to the serverless function",
-);
-assert.ok(
-  config.rewrites?.some(
-    (rewrite) =>
-      rewrite.source === "/(.*)" && rewrite.destination === "/index.html",
-  ),
-  "expected SPA fallback rewrite to index.html",
+  "expected SPA fallback rewrite to skip API routes and index.html",
 );
