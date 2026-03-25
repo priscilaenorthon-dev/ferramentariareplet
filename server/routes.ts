@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { randomUUID } from "node:crypto";
 import { storage } from "./storage";
+import { getDatabaseHealth } from "./db";
 import {
   setupAuth,
   isAuthenticated,
@@ -23,7 +24,7 @@ import {
   type ToolClass,
   type ToolModel,
   type User,
-} from "@shared/schema";
+} from "../shared/schema";
 import { addDays } from "date-fns";
 import { z } from "zod";
 
@@ -202,27 +203,47 @@ const createLoanSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-  
-  // Load user from session for all requests
-  app.use(loadUserFromSession);
+  let startupError: Error | null = null;
 
-  // Auth routes (login, register, logout)
-  setupAuthRoutes(app);
+  app.get("/api/health", async (_req, res) => {
+    const database = await getDatabaseHealth();
+    const ok = !startupError && database.connected;
+    const statusCode = startupError ? 500 : ok ? 200 : database.configured ? 503 : 500;
 
-  // Dashboard stats
-  app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
-    try {
-      const stats = await storage.getDashboardStats(
-        req.user?.role === 'user' ? { userId: req.user.id } : undefined
-      );
-      res.json(stats);
-    } catch (error) {
-      logger.error({ err: error, route: "/api/dashboard/stats" }, "Error fetching dashboard stats");
-      res.status(500).json({ message: "Failed to fetch dashboard stats" });
-    }
+    res.status(statusCode).json({
+      ok,
+      startupError: startupError?.message ?? null,
+      env: {
+        nodeEnv: process.env.NODE_ENV ?? null,
+        databaseUrlSet: Boolean(process.env.DATABASE_URL),
+        sessionSecretSet: Boolean(process.env.SESSION_SECRET),
+      },
+      database,
+    });
   });
+
+  try {
+    // Auth middleware
+    await setupAuth(app);
+    
+    // Load user from session for all requests
+    app.use(loadUserFromSession);
+
+    // Auth routes (login, register, logout)
+    setupAuthRoutes(app);
+
+    // Dashboard stats
+    app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
+      try {
+        const stats = await storage.getDashboardStats(
+          req.user?.role === 'user' ? { userId: req.user.id } : undefined
+        );
+        res.json(stats);
+      } catch (error) {
+        logger.error({ err: error, route: "/api/dashboard/stats" }, "Error fetching dashboard stats");
+        res.status(500).json({ message: "Failed to fetch dashboard stats" });
+      }
+    });
 
   // Tool Classes routes
   app.get('/api/classes', isAuthenticated, authorizeRoles('operator', 'admin'), async (_req, res) => {
@@ -841,26 +862,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/audit/logs', isAuthenticated, authorizeRoles('admin'), async (req, res) => {
-    try {
-      const { targetType, targetId, userId } = req.query;
-      const targetTypeValue =
-        typeof targetType === 'string' && (AUDIT_TARGET_TYPES as readonly string[]).includes(targetType)
-          ? (targetType as AuditTargetType)
-          : undefined;
+    app.get('/api/audit/logs', isAuthenticated, authorizeRoles('admin'), async (req, res) => {
+      try {
+        const { targetType, targetId, userId } = req.query;
+        const targetTypeValue =
+          typeof targetType === 'string' && (AUDIT_TARGET_TYPES as readonly string[]).includes(targetType)
+            ? (targetType as AuditTargetType)
+            : undefined;
 
-      const logs = await storage.getAuditLogs({
-        targetType: targetTypeValue,
-        targetId: typeof targetId === 'string' ? targetId : undefined,
-        userId: typeof userId === 'string' ? userId : undefined,
+        const logs = await storage.getAuditLogs({
+          targetType: targetTypeValue,
+          targetId: typeof targetId === 'string' ? targetId : undefined,
+          userId: typeof userId === 'string' ? userId : undefined,
+        });
+
+        res.json(logs);
+      } catch (error) {
+        logger.error({ err: error, route: "/api/audit/logs" }, "Error fetching audit logs");
+        res.status(500).json({ message: "Failed to fetch audit logs" });
+      }
+    });
+  } catch (error) {
+    startupError = error instanceof Error ? error : new Error(String(error));
+    logger.error({ err: startupError }, "Application startup failed");
+
+    app.use("/api", (_req, res) => {
+      res.status(500).json({
+        message: "Application startup failed",
+        startupError: startupError?.message ?? "Unknown startup error",
       });
-
-      res.json(logs);
-    } catch (error) {
-      logger.error({ err: error, route: "/api/audit/logs" }, "Error fetching audit logs");
-      res.status(500).json({ message: "Failed to fetch audit logs" });
-    }
-  });
+    });
+  }
 
   const httpServer = createServer(app);
   return httpServer;

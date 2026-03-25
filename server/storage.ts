@@ -20,7 +20,7 @@ import {
   type AuditLog,
   type InsertAuditLog,
   type AuditLogWithActor,
-} from "@shared/schema";
+} from "../shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 

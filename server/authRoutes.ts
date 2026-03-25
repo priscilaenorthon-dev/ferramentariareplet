@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { storage } from "./storage";
 import { hashPassword, verifyPassword } from "./auth";
-import { insertUserSchema, type User } from "@shared/schema";
+import { insertUserSchema, type User } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { logger } from "./logger";
 

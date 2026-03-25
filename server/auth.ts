@@ -3,7 +3,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import type { UserRole } from "@shared/schema";
+import type { UserRole } from "../shared/schema";
 
 const SALT_ROUNDS = 10;
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
