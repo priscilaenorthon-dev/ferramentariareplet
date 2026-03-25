@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { apiUrl } from "@/lib/apiBase";
+import { readApiError, readApiResponse } from "@/lib/httpResponse";
 import type { User } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -126,10 +127,9 @@ export default function Users() {
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao criar usuário');
+        throw await readApiError(response, 'Erro ao criar usuário');
       }
-      return response.json();
+      return readApiResponse(response);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });

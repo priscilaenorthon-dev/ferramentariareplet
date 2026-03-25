@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiUrl } from "@/lib/apiBase";
+import { readApiError, readApiResponse } from "@/lib/httpResponse";
 import { getBasePath } from "@/lib/routerBase";
 
 const loginSchema = z.object({
@@ -42,11 +43,13 @@ export default function Login() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erro ao fazer login');
+        throw await readApiError(response, "Erro ao fazer login");
       }
 
-      const user = await response.json();
+      const user = await readApiResponse<{
+        firstName?: string;
+        lastName?: string;
+      }>(response);
       
       // Invalidate and refetch user query
       await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
